@@ -14,5 +14,14 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/setupTests.ts',
-  }
+  },
+  optimizeDeps: {
+    exclude: ['react-native', 'react-native-sqlite-storage']
+  },
+  build: {
+    commonjsOptions: {
+      transformMixedEsModules: true,
+      include: [/node_modules/],
+    },
+  },
 })

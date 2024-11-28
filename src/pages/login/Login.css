@@ -1,0 +1,92 @@
+/* Login.css */
+
+/* Conteneur principal avec fond stylisé */
+.login-content {
+    background-image: url('/assets/background.jpg'); /* Assurez-vous de remplacer le chemin par le vôtre */
+    background-size: cover;
+    background-position: center;
+    min-height: 100vh; /* Remplir la hauteur de l'écran */
+    display: flex;
+    justify-content: center; /* Centrer horizontalement */
+    align-items: center; /* Centrer verticalement */
+    color: white;
+    font-family: 'Roboto', sans-serif; /* Une police moderne et claire */
+    overflow: hidden;
+  }
+  
+  /* Conteneur de connexion avec arrière-plan flouté */
+  .login-container {
+    background: rgba(255, 255, 255, 0.8); /* Fond semi-transparent */
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 400px;
+    backdrop-filter: blur(10px); /* Effet flou */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  /* Titre principal */
+  .ion-title {
+    margin-bottom: 20px;
+    font-size: 24px;
+    font-weight: 600;
+    color: #4CAF50; /* Une couleur de santé ou bien-être */
+  }
+  
+  /* Style pour les champs de texte */
+  .ion-item {
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  
+  .ion-label {
+    color: #333;
+  }
+  
+  .ion-input {
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    padding-left: 12px;
+    font-size: 16px;
+  }
+  
+  .ion-input:focus {
+    box-shadow: 0 0 0 2px #4CAF50; /* Bordure verte au focus */
+  }
+  
+  .ion-icon {
+    font-size: 20px;
+    color: #4CAF50;
+  }
+  
+  /* Bouton avec style moderne */
+  .ion-button {
+    margin-top: 20px;
+    background-color: #4CAF50;
+    border-radius: 8px;
+    font-size: 16px;
+    padding: 12px 20px;
+    text-transform: uppercase;
+    transition: background-color 0.3s ease;
+  }
+  
+  .ion-button:hover {
+    background-color: #388E3C; /* Couleur légèrement plus sombre au survol */
+  }
+  
+  /* Message d'erreur */
+  .ion-text {
+    color: #d32f2f;
+    font-size: 14px;
+    margin-bottom: 15px;
+  }
+  
+  .ion-toast {
+    font-size: 14px;
+    padding: 15px;
+  }
+  
