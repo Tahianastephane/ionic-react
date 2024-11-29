@@ -1,6 +1,6 @@
 import React from 'react';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonLabel, IonItem } from '@ionic/react';
-import { useLocation } from 'react-router-dom';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonLabel, IonItem, IonButton, IonButtons, IonBackButton } from '@ionic/react';
+import { useLocation, useHistory } from 'react-router-dom';
 
 // Définir l'interface Patient pour garantir que l'objet a la bonne forme
 interface Patient {
@@ -33,6 +33,7 @@ interface LocationState {
 
 const PatientDetails: React.FC = () => {
   const location = useLocation<LocationState>(); // Utiliser le type LocationState pour `useLocation`
+  const history = useHistory();
 
   // Vérifier si patient est disponible dans le state
   const patient = location.state?.patient;
@@ -45,6 +46,9 @@ const PatientDetails: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
+          <IonButtons slot="start">
+            <IonBackButton defaultHref="/home" />
+          </IonButtons>
           <IonTitle>Patient Details</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -110,11 +114,10 @@ const PatientDetails: React.FC = () => {
         <IonItem>
           <IonLabel>Rappel: {patient.rappel}</IonLabel>
         </IonItem>
+        <IonButton expand="full" onClick={() => history.goBack()}>Retour</IonButton>
       </IonContent>
     </IonPage>
   );
 };
-
-
 
 export default PatientDetails;

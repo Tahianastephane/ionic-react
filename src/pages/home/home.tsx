@@ -48,7 +48,7 @@ const Home: React.FC = () => {
     try {
       const storedPatients = await AsyncStorage.getItem('patients');
       let patients = storedPatients ? JSON.parse(storedPatients) : [];
-      patients = patients.filter((p: any) => p.nom !== patient.nom || p.prenom !== patient.prenom);
+      patients = patients.filter((p: any) => p.id !== patient.id); // Utiliser l'id pour la suppression
 
       await AsyncStorage.setItem('patients', JSON.stringify(patients));
       setPatients(patients); // Mettre à jour l'état local
@@ -83,7 +83,10 @@ const Home: React.FC = () => {
           {patients.length > 0 ? (
             patients.map((patient, index) => (
               <IonItem key={index}>
-                <IonLabel onClick={() => navigateToPatientDetails(patient)}>{`${patient.nom} ${patient.prenom}`}</IonLabel>
+                {/* Affichage de l'id, du nom et du prénom */}
+                <IonLabel onClick={() => navigateToPatientDetails(patient)}>
+                  {` ${patient.nom} ${patient.prenom}`}
+                </IonLabel>
                 <IonIcon icon={pencil} slot="end" onClick={() => navigateToEditPatient(patient)} />
                 <IonIcon icon={trash} slot="end" onClick={() => deletePatient(patient)} />
               </IonItem>

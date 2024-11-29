@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButton, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonCard, IonCardHeader, IonCardTitle, IonList, IonToast, IonAlert } from '@ionic/react';
 import { useHistory, useLocation } from 'react-router-dom';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { v4 as uuidv4 } from 'uuid';
 
 interface Patient {
+  id: string;
   nom: string;
   prenom: string;
   age: number;
@@ -35,6 +37,7 @@ const PatientForm: React.FC = () => {
   const history = useHistory();
 
   const initialPatient: Patient = {
+    id: uuidv4(),
     nom: '',
     prenom: '',
     age: 0,
@@ -76,7 +79,6 @@ const PatientForm: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    // Vérification si tous les champs sont remplis avant d'ajouter un patient
     if (
       !patient.nom || !patient.prenom || !patient.age || !patient.marie || !patient.region || !patient.district_sanitaire ||
       !patient.formation_sanitaire || !patient.niveau_instruction || !patient.profession_femme || !patient.profession_mari ||
@@ -94,11 +96,12 @@ const PatientForm: React.FC = () => {
       let patients = storedPatients ? JSON.parse(storedPatients) : [];
 
       if (isEdit) {
-        const index = patients.findIndex((p: Patient) => p.nom === patient.nom && p.prenom === patient.prenom);
+        const index = patients.findIndex((p: Patient) => p.id === patient.id);
         if (index !== -1) {
           patients[index] = patient;
         }
       } else {
+        patient.id = uuidv4();
         patients.push(patient);
       }
 
@@ -106,7 +109,7 @@ const PatientForm: React.FC = () => {
       setToastMessage(isEdit ? 'Patient modifié avec succès!' : 'Patient ajouté avec succès!');
       setToastColor('success');
       setShowToast(true);
-      setPatient(initialPatient);  // Réinitialiser le formulaire après l'ajout ou la modification
+      setPatient(initialPatient);
       history.push('/home');
     } catch (error) {
       console.error("Error saving patient:", error);
@@ -120,7 +123,7 @@ const PatientForm: React.FC = () => {
     setToastMessage('Annulation réussie!');
     setToastColor('success');
     setShowToast(true);
-    setPatient(initialPatient);  // Réinitialiser le formulaire après l'annulation
+    setPatient(initialPatient);
     history.push('/home');
   };
 
@@ -129,19 +132,17 @@ const PatientForm: React.FC = () => {
       const storedPatients = await AsyncStorage.getItem('patients');
       let patients = storedPatients ? JSON.parse(storedPatients) : [];
 
-      const index = patients.findIndex((p: Patient) => p.nom === patient.nom && p.prenom === patient.prenom);
-      if (index !== -1) {
-        patients.splice(index, 1);
-        await AsyncStorage.setItem('patients', JSON.stringify(patients));
-        setToastMessage('Patient supprimé avec succès!');
-        setToastColor('success');
-        setShowToast(true);
-        setPatient(initialPatient);  // Réinitialiser le formulaire après la suppression
-        history.push('/home');
-      }
+      patients = patients.filter((p: Patient) => p.id !== patient.id);
+
+      await AsyncStorage.setItem('patients', JSON.stringify(patients));
+      setToastMessage('Patient supprimé avec succès!');
+      setToastColor('success');
+      setShowToast(true);
+      setShowDeleteAlert(false);
+      history.push('/home');
     } catch (error) {
       console.error("Error deleting patient:", error);
-      setToastMessage('Une erreur est survenue lors de la suppression.');
+      setToastMessage('Une erreur est survenue.');
       setToastColor('danger');
       setShowToast(true);
     }
@@ -151,12 +152,11 @@ const PatientForm: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>{isEdit ? 'Modifier' : 'Ajouter'} un Patient</IonTitle>
+          <IonTitle>{isEdit ? 'Modifier Patient' : 'Ajouter Patient'}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent>
-        {/* Section: Informations Personnelles */}
-        <IonCard>
+      <IonCard>
           <IonCardHeader>
             <IonCardTitle>Informations Personnelles</IonCardTitle>
           </IonCardHeader>
@@ -350,29 +350,42 @@ const PatientForm: React.FC = () => {
           </IonList>
         </IonCard>
 
-        {/* Boutons */}
-        <IonButton expand="full" onClick={handleSubmit}>
-          {isEdit ? 'Modifier' : 'Ajouter'} le Patient
-        </IonButton>
-        <IonButton expand="full" color="danger" onClick={handleCancel}>
-          Annuler
-        </IonButton>
 
-        {/* Toast */}
+        {/* Section: Actions */}
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>Actions</IonCardTitle>
+          </IonCardHeader>
+          <IonList>
+            <IonButton expand="block" onClick={handleSubmit}>
+              {isEdit ? 'Modifier' : 'Ajouter'}
+            </IonButton>
+            <IonButton expand="block" color="medium" onClick={handleCancel}>
+              Annuler
+            </IonButton>
+            {isEdit && (
+              <IonButton expand="block" color="danger" onClick={() => setShowDeleteAlert(true)}>
+                Supprimer
+              </IonButton>
+            )}
+          </IonList>
+        </IonCard>
+
+        {/* Toast de confirmation */}
         <IonToast
           isOpen={showToast}
+          onDidDismiss={() => setShowToast(false)}
           message={toastMessage}
           duration={2000}
           color={toastColor}
-          onDidDismiss={() => setShowToast(false)}
         />
 
-        {/* Confirmation de suppression */}
+        {/* Alerte de confirmation de suppression */}
         <IonAlert
           isOpen={showDeleteAlert}
           onDidDismiss={() => setShowDeleteAlert(false)}
-          header={'Confirmer'}
-          message={'Voulez-vous vraiment supprimer ce patient ?'}
+          header="Confirmation"
+          message="Êtes-vous sûr de vouloir supprimer ce patient ?"
           buttons={[
             {
               text: 'Annuler',
