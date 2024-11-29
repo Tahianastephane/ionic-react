@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonList, IonItem, IonLabel, IonIcon } from '@ionic/react';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonList, IonItem, IonLabel, IonIcon, IonRefresher, IonRefresherContent } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { pencil, trash } from 'ionicons/icons';
@@ -57,6 +57,12 @@ const Home: React.FC = () => {
     }
   };
 
+  // Fonction de rafraîchissement
+  const handleRefresh = async (event: CustomEvent) => {
+    await getPatients(); // Récupérer les patients
+    event.detail.complete(); // Indiquer que le rafraîchissement est terminé
+  };
+
   return (
     <IonPage>
       <IonHeader>
@@ -65,6 +71,10 @@ const Home: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent pullingText="Tirer pour rafraîchir" refreshingSpinner="circles" />
+        </IonRefresher>
+
         <h2>Patients List</h2>
         <p>{storageMessage}</p>
         <IonButton onClick={() => history.push('/patient-form')}>Add Patient</IonButton>

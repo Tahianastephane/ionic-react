@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButton, IonItem, IonInput, IonSelect, IonSelectOption, IonCard, IonCardHeader, IonCardTitle, IonList, IonToast } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButton, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonCard, IonCardHeader, IonCardTitle, IonList, IonToast, IonAlert } from '@ionic/react';
 import { useHistory, useLocation } from 'react-router-dom';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Define the Patient type
 interface Patient {
   nom: string;
   prenom: string;
-  age: string; // Changed to string
+  age: number;
   marie: string;
   region: string;
   district_sanitaire: string;
@@ -18,16 +17,15 @@ interface Patient {
   adresse: string;
   commune: string;
   date_dernier_accouchement: string;
-  nombre_enfants_vivants: string; // Changed to string
-  gestite: string; // Changed to string
-  parite: string; // Changed to string
+  nombre_enfants_vivants: number;
+  gestite: number;
+  parite: number;
   ddr: string | undefined;
   dpa: string;
-  cpn1: string; // Changed to string
+  cpn1: number;
   rappel: string;
 }
 
-// Define the LocationState type
 interface LocationState {
   patient?: Patient;
 }
@@ -39,7 +37,7 @@ const PatientForm: React.FC = () => {
   const initialPatient: Patient = {
     nom: '',
     prenom: '',
-    age: '', // Initialized as empty string
+    age: 0,
     marie: '',
     region: '',
     district_sanitaire: '',
@@ -50,12 +48,12 @@ const PatientForm: React.FC = () => {
     adresse: '',
     commune: '',
     date_dernier_accouchement: '',
-    nombre_enfants_vivants: '', // Initialized as empty string
-    gestite: '', // Initialized as empty string
-    parite: '', // Initialized as empty string
+    nombre_enfants_vivants: 0,
+    gestite: 0,
+    parite: 0,
     ddr: '',
     dpa: '',
-    cpn1: '', // Initialized as empty string
+    cpn1: 0,
     rappel: ''
   };
 
@@ -63,6 +61,8 @@ const PatientForm: React.FC = () => {
   const [isEdit, setIsEdit] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastColor, setToastColor] = useState<'success' | 'danger'>('success');
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
   useEffect(() => {
     if (location.state && location.state.patient) {
@@ -76,52 +76,75 @@ const PatientForm: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    // Check if all required fields are filled
+    // Vérification si tous les champs sont remplis avant d'ajouter un patient
     if (
-      !patient.nom || !patient.prenom || !patient.age || !patient.marie || !patient.region || 
-      !patient.district_sanitaire || !patient.formation_sanitaire || !patient.niveau_instruction || 
-      !patient.profession_femme || !patient.profession_mari || !patient.adresse || !patient.commune ||
-      !patient.date_dernier_accouchement || !patient.nombre_enfants_vivants || !patient.gestite || 
-      !patient.parite || !patient.ddr || !patient.dpa || !patient.cpn1
+      !patient.nom || !patient.prenom || !patient.age || !patient.marie || !patient.region || !patient.district_sanitaire ||
+      !patient.formation_sanitaire || !patient.niveau_instruction || !patient.profession_femme || !patient.profession_mari ||
+      !patient.adresse || !patient.commune || !patient.date_dernier_accouchement || !patient.nombre_enfants_vivants ||
+      !patient.gestite || !patient.parite || !patient.ddr || !patient.dpa || !patient.cpn1 || !patient.rappel
     ) {
-      setToastMessage('Tous les champs sont obligatoires.');
+      setToastMessage('Tous les champs doivent être remplis.');
+      setToastColor('danger');
       setShowToast(true);
-      return; // Stop the form submission if fields are missing
+      return;
     }
 
     try {
       const storedPatients = await AsyncStorage.getItem('patients');
       let patients = storedPatients ? JSON.parse(storedPatients) : [];
 
-      // Convert string values to numbers where necessary
-      const newPatient = {
-        ...patient,
-        age: parseInt(patient.age, 10),
-        nombre_enfants_vivants: parseInt(patient.nombre_enfants_vivants, 10),
-        gestite: parseInt(patient.gestite, 10),
-        parite: parseInt(patient.parite, 10),
-        cpn1: parseInt(patient.cpn1, 10)
-      };
-
       if (isEdit) {
-        // Find the index of the patient to update
-        const index = patients.findIndex((p: Patient) => p.nom === location.state.patient?.nom && p.prenom === location.state.patient?.prenom);
+        const index = patients.findIndex((p: Patient) => p.nom === patient.nom && p.prenom === patient.prenom);
         if (index !== -1) {
-          patients[index] = newPatient;
+          patients[index] = patient;
         }
       } else {
-        patients.push(newPatient);
+        patients.push(patient);
       }
 
       await AsyncStorage.setItem('patients', JSON.stringify(patients));
+      setToastMessage(isEdit ? 'Patient modifié avec succès!' : 'Patient ajouté avec succès!');
+      setToastColor('success');
+      setShowToast(true);
+      setPatient(initialPatient);  // Réinitialiser le formulaire après l'ajout ou la modification
       history.push('/home');
     } catch (error) {
       console.error("Error saving patient:", error);
+      setToastMessage('Une erreur est survenue.');
+      setToastColor('danger');
+      setShowToast(true);
     }
   };
 
   const handleCancel = () => {
-    history.push('/home'); // Redirige l'utilisateur vers la page d'accueil
+    setToastMessage('Annulation réussie!');
+    setToastColor('success');
+    setShowToast(true);
+    setPatient(initialPatient);  // Réinitialiser le formulaire après l'annulation
+    history.push('/home');
+  };
+
+  const handleDelete = async () => {
+    try {
+      const storedPatients = await AsyncStorage.getItem('patients');
+      let patients = storedPatients ? JSON.parse(storedPatients) : [];
+
+      const index = patients.findIndex((p: Patient) => p.nom === patient.nom && p.prenom === patient.prenom);
+      if (index !== -1) {
+        patients.splice(index, 1);
+        await AsyncStorage.setItem('patients', JSON.stringify(patients));
+        setToastMessage('Patient supprimé avec succès!');
+        setToastColor('success');
+        setShowToast(true);
+        setPatient(initialPatient);  // Réinitialiser le formulaire après la suppression
+        history.push('/home');
+      }
+    } catch (error) {
+      console.error("Error deleting patient:", error);
+      setToastMessage('Une erreur est survenue lors de la suppression.');
+      setToastColor('danger');
+      setShowToast(true);
+    }
   };
 
   return (
@@ -159,8 +182,8 @@ const PatientForm: React.FC = () => {
                 label="Âge"
                 type="number"
                 placeholder="Entrez l'âge"
-                value={patient.age}
-                onIonChange={e => handleInputChange('age', e.detail.value!)}
+                value={patient.age.toString()}
+                onIonChange={e => handleInputChange('age', parseInt(e.detail.value!, 10))}
               />
             </IonItem>
             <IonItem>
@@ -190,46 +213,47 @@ const PatientForm: React.FC = () => {
             <IonCardTitle>Informations de la Grossesse</IonCardTitle>
           </IonCardHeader>
           <IonList>
-            <IonItem>
+          <IonItem>
               <IonInput
                 label="Date Dernier Accouchement"
                 type="date"
                 value={patient.date_dernier_accouchement}
                 onIonChange={e => handleInputChange('date_dernier_accouchement', e.detail.value!)}
-                placeholder="YYYY-MM-DD"
+                placeholder="YYYY-MM-DD" // Affichage du placeholder au format requis
               />
             </IonItem>
             <IonItem>
               <IonInput
                 label="Nombre d'Enfants Vivants"
                 type="number"
-                value={patient.nombre_enfants_vivants}
-                onIonChange={e => handleInputChange('nombre_enfants_vivants', e.detail.value!)}
+                value={patient.nombre_enfants_vivants.toString()}
+                onIonChange={e => handleInputChange('nombre_enfants_vivants', parseInt(e.detail.value!, 10))}
               />
             </IonItem>
             <IonItem>
               <IonInput
                 label="Gestité"
                 type="number"
-                value={patient.gestite}
-                onIonChange={e => handleInputChange('gestite', e.detail.value!)}
+                value={patient.gestite.toString()}
+                onIonChange={e => handleInputChange('gestite', parseInt(e.detail.value!, 10))}
               />
             </IonItem>
             <IonItem>
               <IonInput
                 label="Parité"
                 type="number"
-                value={patient.parite}
-                onIonChange={e => handleInputChange('parite', e.detail.value!)}
+                value={patient.parite.toString()}
+                onIonChange={e => handleInputChange('parite', parseInt(e.detail.value!, 10))}
               />
             </IonItem>
+            
             <IonItem>
               <IonInput
                 label="DDR"
                 type="date"
                 value={patient.ddr}
                 onIonChange={e => handleInputChange('ddr', e.detail.value!)}
-                placeholder="YYYY-MM-DD"
+                placeholder="YYYY-MM-DD" // Affichage du placeholder au format requis
               />
             </IonItem>
             <IonItem>
@@ -238,24 +262,25 @@ const PatientForm: React.FC = () => {
                 type="date"
                 value={patient.dpa}
                 onIonChange={e => handleInputChange('dpa', e.detail.value!)}
-                placeholder="YYYY-MM-DD"
+                placeholder="YYYY-MM-DD" // Affichage du placeholder au format requis
               />
             </IonItem>
+            
             <IonItem>
               <IonInput
                 label="CPN1"
                 type="number"
-                value={patient.cpn1}
-                onIonChange={e => handleInputChange('cpn1', e.detail.value!)}
+                value={patient.cpn1.toString()}
+                onIonChange={e => handleInputChange('cpn1', parseInt(e.detail.value!, 10))}
               />
             </IonItem>
           </IonList>
         </IonCard>
 
-        {/* Section: Autres Informations */}
+        {/* Section: Détails Professionnels et Autres */}
         <IonCard>
           <IonCardHeader>
-            <IonCardTitle>Autres Informations</IonCardTitle>
+            <IonCardTitle>Détails Professionnels et Autres</IonCardTitle>
           </IonCardHeader>
           <IonList>
             <IonItem>
@@ -276,7 +301,7 @@ const PatientForm: React.FC = () => {
             </IonItem>
             <IonItem>
               <IonInput
-                label="Niveau d'Instruction"
+                label="Niveau Instruction"
                 placeholder="Entrez le niveau d'instruction"
                 value={patient.niveau_instruction}
                 onIonChange={e => handleInputChange('niveau_instruction', e.detail.value!)}
@@ -314,23 +339,51 @@ const PatientForm: React.FC = () => {
                 onIonChange={e => handleInputChange('commune', e.detail.value!)}
               />
             </IonItem>
+            <IonItem>
+              <IonInput
+                label="Rappel"
+                placeholder="Entrez un rappel"
+                value={patient.rappel}
+                onIonChange={e => handleInputChange('rappel', e.detail.value!)}
+              />
+            </IonItem>
           </IonList>
         </IonCard>
 
-        {/* Button Group */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px' }}>
-          <IonButton color="danger" onClick={handleCancel}>Annuler</IonButton>
-          <IonButton color="success" onClick={handleSubmit}>
-            {isEdit ? 'Modifier le Patient' : 'Ajouter le Patient'}
-          </IonButton>
-        </div>
+        {/* Boutons */}
+        <IonButton expand="full" onClick={handleSubmit}>
+          {isEdit ? 'Modifier' : 'Ajouter'} le Patient
+        </IonButton>
+        <IonButton expand="full" color="danger" onClick={handleCancel}>
+          Annuler
+        </IonButton>
 
-        {/* Toast for Error Messages */}
+        {/* Toast */}
         <IonToast
           isOpen={showToast}
           message={toastMessage}
           duration={2000}
+          color={toastColor}
           onDidDismiss={() => setShowToast(false)}
+        />
+
+        {/* Confirmation de suppression */}
+        <IonAlert
+          isOpen={showDeleteAlert}
+          onDidDismiss={() => setShowDeleteAlert(false)}
+          header={'Confirmer'}
+          message={'Voulez-vous vraiment supprimer ce patient ?'}
+          buttons={[
+            {
+              text: 'Annuler',
+              role: 'cancel',
+              handler: () => setShowDeleteAlert(false)
+            },
+            {
+              text: 'Supprimer',
+              handler: handleDelete
+            }
+          ]}
         />
       </IonContent>
     </IonPage>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButton, IonItem, IonLabel, IonInput, IonText, IonIcon, IonToast } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButton, IonItem, IonLabel, IonInput, IonText, IonIcon, IonToast, IonRefresher, IonRefresherContent } from '@ionic/react';
 import { eyeOffOutline, eyeOutline } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
 import { getAdmin } from '../database/database';
@@ -40,6 +40,16 @@ const Login: React.FC = () => {
     }
   };
 
+  // Fonction de rafraîchissement
+  const handleRefresh = (event: CustomEvent) => {
+    // Remettre les champs de saisie à leurs valeurs initiales
+    setUsername('');
+    setPassword('');
+    setErrorMessage('');
+    setShowPassword(false);
+    event.detail.complete(); // Indiquer que le rafraîchissement est terminé
+  };
+
   return (
     <IonPage>
       <IonHeader>
@@ -48,6 +58,10 @@ const Login: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding login-content">
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent pullingText="Tirer pour rafraîchir" refreshingSpinner="circles" />
+        </IonRefresher>
+
         <div className="login-container">
           <IonTitle className="ion-title">Bienvenue</IonTitle>
           

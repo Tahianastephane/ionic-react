@@ -55,7 +55,7 @@ export const initializeAdmin = async () => {
 
 // **Fonctions spécifiques pour la table patients**
 export const savePatient = async (patient: {
-  id?: number; // L'ID peut être optionnel, il sera généré si non fourni
+  id?: number; 
   nom: string;
   prenom: string;
   age: number;
