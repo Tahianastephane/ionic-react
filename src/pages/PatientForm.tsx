@@ -71,6 +71,9 @@ const PatientForm: React.FC = () => {
     if (location.state && location.state.patient) {
       setPatient(location.state.patient);
       setIsEdit(true);
+    } else {
+      setPatient(initialPatient);
+      setIsEdit(false);
     }
   }, [location.state]);
 
@@ -123,7 +126,8 @@ const PatientForm: React.FC = () => {
     setToastMessage('Annulation réussie!');
     setToastColor('success');
     setShowToast(true);
-    setPatient(initialPatient);
+    setPatient(initialPatient);  // Réinitialiser le patient
+    setIsEdit(false);            // Réinitialiser le mode édition
     history.push('/home');
   };
 
@@ -353,9 +357,7 @@ const PatientForm: React.FC = () => {
 
         {/* Section: Actions */}
         <IonCard>
-          <IonCardHeader>
-            <IonCardTitle>Actions</IonCardTitle>
-          </IonCardHeader>
+          
           <IonList>
             <IonButton expand="block" onClick={handleSubmit}>
               {isEdit ? 'Modifier' : 'Ajouter'}
