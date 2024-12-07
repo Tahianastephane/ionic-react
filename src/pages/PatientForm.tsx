@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButton, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonCard, IonCardHeader, IonCardTitle, IonList, IonToast, IonAlert } from '@ionic/react';
 import { useHistory, useLocation } from 'react-router-dom';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { v4 as uuidv4 } from 'uuid';
 
 interface Patient {
-  id: string;
+  telephone: string;
   nom: string;
   prenom: string;
   age: number;
@@ -37,7 +36,7 @@ const PatientForm: React.FC = () => {
   const history = useHistory();
 
   const initialPatient: Patient = {
-    id: uuidv4(),
+    telephone: '',
     nom: '',
     prenom: '',
     age: 0,
@@ -83,7 +82,7 @@ const PatientForm: React.FC = () => {
 
   const handleSubmit = async () => {
     if (
-      !patient.nom || !patient.prenom || !patient.age || !patient.marie || !patient.region || !patient.district_sanitaire ||
+      !patient.telephone || !patient.nom || !patient.prenom || !patient.age || !patient.marie || !patient.region || !patient.district_sanitaire ||
       !patient.formation_sanitaire || !patient.niveau_instruction || !patient.profession_femme || !patient.profession_mari ||
       !patient.adresse || !patient.commune || !patient.date_dernier_accouchement || !patient.nombre_enfants_vivants ||
       !patient.gestite || !patient.parite || !patient.ddr || !patient.dpa || !patient.cpn1 || !patient.rappel
@@ -99,12 +98,11 @@ const PatientForm: React.FC = () => {
       let patients = storedPatients ? JSON.parse(storedPatients) : [];
 
       if (isEdit) {
-        const index = patients.findIndex((p: Patient) => p.id === patient.id);
+        const index = patients.findIndex((p: Patient) => p.telephone === patient.telephone);
         if (index !== -1) {
           patients[index] = patient;
         }
       } else {
-        patient.id = uuidv4();
         patients.push(patient);
       }
 
@@ -136,7 +134,7 @@ const PatientForm: React.FC = () => {
       const storedPatients = await AsyncStorage.getItem('patients');
       let patients = storedPatients ? JSON.parse(storedPatients) : [];
 
-      patients = patients.filter((p: Patient) => p.id !== patient.id);
+      patients = patients.filter((p: Patient) => p.telephone !== patient.telephone);
 
       await AsyncStorage.setItem('patients', JSON.stringify(patients));
       setToastMessage('Patient supprimé avec succès!');
@@ -160,12 +158,20 @@ const PatientForm: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent>
-      <IonCard>
+        <IonCard>
           <IonCardHeader>
             <IonCardTitle>Informations Personnelles</IonCardTitle>
           </IonCardHeader>
           <IonList>
             <IonItem>
+              <IonInput
+                label="Téléphone"
+                placeholder="Entrez le numéro de téléphone"
+                value={patient.telephone}
+                onIonChange={e => handleInputChange('telephone', e.detail.value!)}
+              />
+           </IonItem>
+           <IonItem>
               <IonInput
                 label="Nom"
                 placeholder="Entrez le nom"
@@ -354,50 +360,39 @@ const PatientForm: React.FC = () => {
           </IonList>
         </IonCard>
 
+        <IonButton expand="full" onClick={handleSubmit}>
+          {isEdit ? 'Modifier' : 'Ajouter'}
+        </IonButton>
+        {isEdit && (
+          <IonButton expand="full" color="danger" onClick={() => setShowDeleteAlert(true)}>
+            Supprimer
+          </IonButton>
+        )}
+        <IonButton expand="full" onClick={handleCancel}>
+          Annuler
+        </IonButton>
 
-        {/* Section: Actions */}
-        <IonCard>
-          
-          <IonList>
-            <IonButton expand="block" onClick={handleSubmit}>
-              {isEdit ? 'Modifier' : 'Ajouter'}
-            </IonButton>
-            <IonButton expand="block" color="medium" onClick={handleCancel}>
-              Annuler
-            </IonButton>
-            {isEdit && (
-              <IonButton expand="block" color="danger" onClick={() => setShowDeleteAlert(true)}>
-                Supprimer
-              </IonButton>
-            )}
-          </IonList>
-        </IonCard>
-
-        {/* Toast de confirmation */}
         <IonToast
           isOpen={showToast}
-          onDidDismiss={() => setShowToast(false)}
           message={toastMessage}
-          duration={2000}
           color={toastColor}
+          duration={3000}
+          onDidDismiss={() => setShowToast(false)}
         />
-
-        {/* Alerte de confirmation de suppression */}
         <IonAlert
           isOpen={showDeleteAlert}
           onDidDismiss={() => setShowDeleteAlert(false)}
-          header="Confirmation"
-          message="Êtes-vous sûr de vouloir supprimer ce patient ?"
+          header="Confirmer la suppression"
+          message="Voulez-vous vraiment supprimer ce patient?"
           buttons={[
             {
               text: 'Annuler',
               role: 'cancel',
-              handler: () => setShowDeleteAlert(false)
             },
             {
               text: 'Supprimer',
-              handler: handleDelete
-            }
+              handler: handleDelete,
+            },
           ]}
         />
       </IonContent>

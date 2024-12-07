@@ -47,6 +47,8 @@ import '@ionic/react/css/palettes/dark.system.css';
 /* Theme variables */
 import './theme/variables.css';
 import PatientAntes from './pages/PatientAntes';
+import VoirAntecedent from './pages/login/PatientAntesVoir';
+
 
 setupIonicReact();
 const App: React.FC = () => (
@@ -56,9 +58,12 @@ const App: React.FC = () => (
         <Route path="/login" component={login} exact />
         <Route path="/registration" component={registration} exact />
         <Route path="/home" component={Home} exact />
+
         <Route  path="/patient-form" component={PatientForm} exact/>
         <Route  path="/patient-antes" component={PatientAntes} exact/>
         <Route exact path="/patient-details" component={PatientDetails} />
+        <Route exact path="/voir-antecedent" component={VoirAntecedent} />
+
         <Route exact path="/" render={() => <Redirect to="/login" />} />
         
       </IonRouterOutlet>

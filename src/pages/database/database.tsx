@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as bcrypt from 'bcryptjs'; // Importation de bcryptjs pour hachage du mot de passe
 
-
 // Sauvegarder les données sous une clé spécifique
 const storeData = async (key: string, value: any) => {
   try {
@@ -36,26 +35,34 @@ export const getAdmin = async () => {
 
 // Fonction pour insérer un admin par défaut si nécessaire
 export const initializeAdmin = async () => {
-  const admin = await getAdmin();
-  if (!admin || admin.length === 0) {
-    // Hacher le mot de passe pour plus de sécurité
-    const hashedPassword = bcrypt.hashSync('admin123', 10); // Remplacer par un mot de passe sécurisé
-    
-    const defaultAdmin = {
-      username: 'admin',
-      password: hashedPassword,
-    };
-    
-    await saveAdmin(defaultAdmin);
-    console.log('Admin utilisateur inséré');
-  } else {
-    console.log('L\'administrateur existe déjà');
-  }
+  // Supprimer toutes les données liées aux administrateurs
+  await clearAdminData(); // Fonction que vous devrez implémenter pour supprimer les données de l'administrateur
+
+  const newPassword = 'Admin123'; // Le nouveau mot de passe à réinitialiser
+  const newUsername = 'Admin'; // Nouveau nom d'utilisateur
+  
+  // Créer un nouvel administrateur avec les nouvelles informations
+  const hashedPassword = bcrypt.hashSync(newPassword, 5); // Hacher le mot de passe pour plus de sécurité
+  
+  const defaultAdmin = {
+    username: newUsername,  // Utilisation du nouveau nom d'utilisateur
+    password: hashedPassword,
+  };
+  
+  await saveAdmin(defaultAdmin); // Sauvegarder le nouvel administrateur
+  console.log('Administrateur réinitialisé avec succès');
 };
 
-// **Fonctions spécifiques pour la table patients**
-export const savePatient = async (patient: {
-  id?: number; 
+// Fonction pour supprimer toutes les données des administrateurs
+const clearAdminData = async () => {
+  // Effacer les données existantes de l'administrateur
+  await storeData('admins', []); // Cela efface la liste des administrateurs dans le stockage
+  console.log('Toutes les données des administrateurs ont été supprimées');
+};
+
+// **Modèle de Patient**
+interface Patient {
+  telephone: string; // Utiliser le numéro de téléphone comme identifiant
   nom: string;
   prenom: string;
   age: number;
@@ -72,13 +79,16 @@ export const savePatient = async (patient: {
   nombre_enfants_vivants: number;
   gestite: number;
   parite: number;
-  ddr: string | undefined;
+  ddr: string;
   dpa: string;
-  cpn1: number; 
+  cpn1: number;
   rappel: string;
-}) => {
+}
+
+// **Fonctions spécifiques pour la table patients**
+export const savePatient = async (patient: Patient) => {
   const patients = await getData('patients');
-  const updatedPatients = patients ? [...patients, patient] : [patient];
+  const updatedPatients = patients ? { ...patients, [patient.telephone]: patient } : { [patient.telephone]: patient };
   await storeData('patients', updatedPatients);
 };
 
@@ -90,7 +100,7 @@ export const getPatients = async () => {
 // **Fonctions spécifiques pour la table antecedents**
 export const saveAntecedent = async (antecedent: {
   id?: number; // L'ID est optionnel
-  id_patient: number; // L'ID du patient
+  id_patient: string; // L'ID du patient (numéro de téléphone)
   age_inferieur_18_ans: number;
   age_superieur_38_ans: number;
   primipare_agee_plus_35_ans: number;
@@ -120,7 +130,7 @@ export const getAntecedents = async () => {
 // **Fonctions spécifiques pour la table messages**
 export const saveMessage = async (message: {
   id?: number; // L'ID est optionnel
-  id_patient: number; // L'ID du patient auquel ce message appartient
+  id_patient: string; // L'ID du patient auquel ce message appartient (numéro de téléphone)
   envoyer: string;
   message: string;
   date_envoie: string;
@@ -135,5 +145,5 @@ export const getMessages = async () => {
   return await getData('messages');
 };
 
-
+// Initialiser l'administrateur par défaut
 initializeAdmin();

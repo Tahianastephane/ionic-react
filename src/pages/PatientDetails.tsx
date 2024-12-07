@@ -1,9 +1,11 @@
-import React from 'react';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonLabel, IonItem, IonButton, IonButtons, IonBackButton } from '@ionic/react';
+import React, { useState, useEffect } from 'react';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonLabel, IonItem, IonButton, IonButtons, IonBackButton, IonGrid, IonRow, IonCol, IonCheckbox, IonInput } from '@ionic/react';
 import { useLocation, useHistory } from 'react-router-dom';
+import { Storage } from '@capacitor/storage';
 
 // Définir l'interface Patient pour garantir que l'objet a la bonne forme
 interface Patient {
+  telephone: any;
   nom: string;
   prenom: string;
   age: number;
@@ -24,6 +26,7 @@ interface Patient {
   dpa: string;
   cpn1: number;
   rappel: string;
+  antecedent?: any; // Ajout de la propriété 'antecedent' de type any
 }
 
 // Définir un type pour le state de useLocation avec la structure spécifique attendue
@@ -36,10 +39,112 @@ const PatientDetails: React.FC = () => {
   const history = useHistory();
 
   // Vérifier si patient est disponible dans le state
-  const patient = location.state?.patient;
+  const patient: Patient | undefined = location.state?.patient;
+
+  // Initialisation de l'état answers avec toutes les cases à cocher décochées par défaut
+  const [answers, setAnswers] = useState<any>({
+    ageInferieur18Ans: undefined,
+    ageSuperieur38Ans: undefined,
+    primipareAgeePlus35Ans: undefined,
+    pariteSuperieure5: undefined,
+    dernierAccouchementMoins2Ans: undefined,
+    bassinRetreciAsymetrique: undefined,
+    taSup148: undefined,
+    diabete: undefined,
+    dyspnee: undefined,
+    intervention: undefined,
+    grossesseGemellaire: undefined,
+    antecedent: undefined,
+    mortNe: undefined,
+    faussesCouches: undefined,
+    habitude: undefined,
+  });
+
+  const [isAntecedentAdded, setIsAntecedentAdded] = useState<boolean>(false); // État pour savoir si l'antécédent est ajouté
+  const [patients, setPatients] = useState<any[]>([]);
+
+  // Fonction pour récupérer la liste des patients depuis Capacitor Storage
+  const getPatients = async () => {
+    try {
+      const storedPatients = await Storage.get({ key: 'patients' });
+      if (storedPatients.value) {
+        setPatients(JSON.parse(storedPatients.value));
+      } else {
+        setPatients([]);
+      }
+    } catch (error) {
+      console.log('Erreur lors de la récupération des patients', error);
+    }
+  };
+
+  useEffect(() => {
+    getPatients(); // Charger les patients lorsque la page se charge
+  }, []);
+
+  // Vérifier si l'antécédent existe déjà pour ce patient
+  useEffect(() => {
+    if (patient) {
+      const existingPatient = patients.find((p) => p.telephone === patient.telephone);
+      if (existingPatient && existingPatient.antecedent) {
+        setAnswers(existingPatient.antecedent); // Précharger les antécédents si déjà présents
+        setIsAntecedentAdded(true); // Mettre à jour l'état pour afficher "Voir Antécédent"
+      }
+    }
+  }, [patients, patient]);
+
+  // Gérer les changements dans les cases à cocher
+  const handleCheckboxChange = (field: string, value: boolean) => {
+    setAnswers((prevState: any) => ({
+      ...prevState,
+      [field]: value ? true : false,
+    }));
+  };
+
+
+  // Ajouter les antécédents au patient
+  const addAntecedent = async () => {
+    try {
+      const updatedPatients = patients.map((p) => {
+        if (p.telephone === patient?.telephone) {
+          return { ...p, antecedent: answers }; // Associer les antécédents avec le patient
+        }
+        return p;
+      });
+
+      await Storage.set({ key: 'patients', value: JSON.stringify(updatedPatients) }); // Sauvegarder les patients mis à jour
+      setPatients(updatedPatients); // Mettre à jour l'état local avec les patients mis à jour
+      console.log('Patients mis à jour:', updatedPatients); // Vérifiez que les patients sont bien mis à jour
+      alert('Antécédent ajouté avec succès !');
+      setIsAntecedentAdded(true); // Marquer l'antécédent comme ajouté
+    } catch (error) {
+      console.log('Erreur lors de l\'ajout de l\'antécédent', error);
+    }
+  };
+
+  const handleSubmit = async () => {
+    await addAntecedent();
+    history.push({
+      pathname: '/home', // Rediriger vers la page d'accueil après la soumission
+    });
+  };
 
   if (!patient) {
-    return <div>No patient found!</div>; // Si aucune donnée n'est trouvée
+    return (
+      <IonPage>
+        <IonHeader>
+          <IonToolbar>
+            <IonButtons slot="start">
+              <IonBackButton defaultHref="/home" />
+            </IonButtons>
+            <IonTitle>Erreur</IonTitle>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent className="ion-padding">
+          <h2>Aucun patient trouvé!</h2>
+          <IonButton expand="full" onClick={() => history.goBack()}>Retour</IonButton>
+        </IonContent>
+      </IonPage>
+    );
   }
 
   return (
@@ -49,11 +154,11 @@ const PatientDetails: React.FC = () => {
           <IonButtons slot="start">
             <IonBackButton defaultHref="/home" />
           </IonButtons>
-          <IonTitle>Patient Details</IonTitle>
+          <IonTitle>Détails du Patient</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        <h2>Details of {patient.nom} {patient.prenom}</h2>
+        <h2>Détails de {patient.nom} {patient.prenom}</h2>
         <IonItem>
           <IonLabel>Nom: {patient.nom}</IonLabel>
         </IonItem>
@@ -114,7 +219,60 @@ const PatientDetails: React.FC = () => {
         <IonItem>
           <IonLabel>Rappel: {patient.rappel}</IonLabel>
         </IonItem>
-        <IonButton expand="full" onClick={() => history.goBack()}>Retour</IonButton>
+
+        <IonGrid>
+          <IonRow>
+            <IonCol size="12">
+              <IonLabel>Numéro de téléphone</IonLabel>
+              <IonInput
+                value={patient.telephone}
+                readonly
+              />
+            </IonCol>
+          </IonRow>
+          {[
+            { label: 'Age inférieur à 18 ans', field: 'ageInferieur18Ans' },
+            { label: 'Age supérieur à 38 ans', field: 'ageSuperieur38Ans' },
+            { label: 'Primipare âgée de plus de 35 ans', field: 'primipareAgeePlus35Ans' },
+            { label: 'Parité supérieure à 5', field: 'pariteSuperieure5' },
+            { label: 'Dernier accouchement il y a moins de 2 ans', field: 'dernierAccouchementMoins2Ans' },
+            { label: 'Bassin rétréci asymétrique', field: 'bassinRetreciAsymetrique' },
+            { label: 'TA supérieure à 14/8', field: 'taSup148' },
+            { label: 'Diabète', field: 'diabete' },
+            { label: 'Dyspnée', field: 'dyspnee' },
+            { label: 'Intervention chirurgicale', field: 'intervention' },
+            { label: 'Grossesse gemellaire', field: 'grossesseGemellaire' },
+            { label: 'Antécédents médicaux', field: 'antecedent' },
+            { label: 'Mort-né', field: 'mortNe' },
+            { label: 'Fausses couches', field: 'faussesCouches' },
+            { label: 'Habitude', field: 'habitude' },
+          ].map(({ label, field }) => (
+            <IonRow key={field}>
+            <IonCol size="6">
+              <IonLabel>{label}</IonLabel>
+            </IonCol>
+            <IonCol size="3">
+              <IonCheckbox
+                checked={answers[field] === true}
+                onIonChange={() => handleCheckboxChange(field, true)}
+              />
+              <IonLabel>Oui</IonLabel>
+            </IonCol>
+            <IonCol size="3">
+              <IonCheckbox
+                checked={answers[field] === false}
+                onIonChange={() => handleCheckboxChange(field, false)}
+              />
+              <IonLabel>Non</IonLabel>
+            </IonCol>
+          </IonRow>
+          ))}
+        </IonGrid>
+
+        {/* Bouton pour ajouter les antécédents */}
+        <IonButton expand="full" onClick={handleSubmit}>
+          {isAntecedentAdded ? 'Voir Antécédent' : 'Ajouter Antécédent'}
+        </IonButton>
       </IonContent>
     </IonPage>
   );

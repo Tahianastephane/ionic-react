@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButton, IonItem, IonLabel, IonInput, IonText, IonIcon, IonToast, IonRefresher, IonRefresherContent } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButton, IonItem, IonInput, IonText, IonIcon, IonToast, IonRefresher, IonRefresherContent } from '@ionic/react';
 import { eyeOffOutline, eyeOutline } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
 import { getAdmin } from '../database/database';
 import bcrypt from 'bcryptjs';
-import './Login.css';
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState<string>('');
@@ -14,20 +13,31 @@ const Login: React.FC = () => {
   const [showToast, setShowToast] = useState<boolean>(false);
   const history = useHistory();
 
+
+
   const handleLogin = async () => {
     const admin = await getAdmin();
-
+    console.log('Admin récupéré:', admin);
+  
     if (admin && admin.length > 0) {
       const storedAdmin = admin[0];
-
+  
       if (!password) {
-        setErrorMessage('Le mot de passe ne peut pas être vide');
+        setErrorMessage('');
         setShowToast(true);
         return;
       }
+  
+      // Vérification que storedAdmin.password est bien une chaîne de caractères
+      if (typeof storedAdmin.password !== 'string' || !storedAdmin.password) {
+        setErrorMessage('Le mot de passe de l\'administrateur est invalide');
+        setShowToast(true);
+        return;
+      }
+      console.log('Mot de passe stocké:', storedAdmin.password);  // Vérifiez la valeur du mot de passe
 
       const passwordMatch = bcrypt.compareSync(password, storedAdmin.password);
-
+  
       if (username === storedAdmin.username && passwordMatch) {
         history.push('/home');
       } else {
@@ -39,15 +49,14 @@ const Login: React.FC = () => {
       setShowToast(true);
     }
   };
+  
 
-  // Fonction de rafraîchissement
   const handleRefresh = (event: CustomEvent) => {
-    // Remettre les champs de saisie à leurs valeurs initiales
     setUsername('');
     setPassword('');
     setErrorMessage('');
     setShowPassword(false);
-    event.detail.complete(); // Indiquer que le rafraîchissement est terminé
+    event.detail.complete();
   };
 
   return (
@@ -57,38 +66,42 @@ const Login: React.FC = () => {
           <IonTitle>Connexion</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding login-content">
+      <IonContent fullscreen className="ion-padding">
         <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
           <IonRefresherContent pullingText="Tirer pour rafraîchir" refreshingSpinner="circles" />
         </IonRefresher>
 
-        <div className="login-container">
-          <IonTitle className="ion-title">Bienvenue</IonTitle>
-          
-          <IonItem>
-            <IonLabel position="floating">Nom d'utilisateur</IonLabel>
+        <div className="ion-text-center">
+          <IonTitle>Bienvenue</IonTitle>
+          <br />
+          <br />
+
+          <IonItem style={{ marginBottom: '15px' }}>
             <IonInput
               value={username}
               onIonChange={e => setUsername(e.detail.value!)}
               type="text"
               required
-              autofocus
+              label="Nom d'utilisateur"
+              labelPlacement="floating"
+              placeholder="Entrez votre nom d'utilisateur"
             />
           </IonItem>
 
           <IonItem>
-            <IonLabel position="floating">Mot de passe</IonLabel>
             <IonInput
               value={password}
               onIonChange={e => setPassword(e.detail.value!)}
-              type={showPassword ? "text" : "password"}
+              type={showPassword ? 'text' : 'password'}
               required
+              label="Mot de passe"
+              labelPlacement="floating"
+              placeholder="Entrez votre mot de passe"
             />
             <IonIcon
               icon={showPassword ? eyeOffOutline : eyeOutline}
               slot="end"
               onClick={() => setShowPassword(!showPassword)}
-              style={{ cursor: 'pointer' }}
             />
           </IonItem>
 
@@ -97,7 +110,7 @@ const Login: React.FC = () => {
               <p>{errorMessage}</p>
             </IonText>
           )}
-
+          <br />
           <IonButton expand="full" onClick={handleLogin} color="primary">
             Se connecter
           </IonButton>
