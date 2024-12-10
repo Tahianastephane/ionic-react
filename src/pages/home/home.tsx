@@ -1,15 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonItem, IonLabel, IonIcon, IonRefresher, IonRefresherContent, IonFab, IonFabButton, IonMenu, IonContent, IonList, IonMenuButton, IonButtons, IonButton, IonTabBar, IonTabButton } from '@ionic/react';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonItem, IonLabel, IonIcon, IonRefresher, IonRefresherContent, IonFabButton, IonMenu, IonContent, IonList, IonMenuButton, IonButtons, IonTabBar, IonTabButton, IonToast, IonModal, IonButton, IonBadge } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { pencil, trash, add, chatbox, colorPalette, home, statsChart, megaphone } from 'ionicons/icons';
+import { pencil, trash, add, chatbox, colorPalette, home, statsChart, megaphone, notifications } from 'ionicons/icons';
+import { addMonths } from 'date-fns';
 
 const Home: React.FC = () => {
   const [patients, setPatients] = useState<any[]>([]);
   const [storageMessage, setStorageMessage] = useState<string>('');
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationMessages, setNotificationMessages] = useState<string[]>([]);
+  const [newNotificationsCount, setNewNotificationsCount] = useState(0);
   const history = useHistory();
 
-  // Function to fetch patients from AsyncStorage
   const getPatients = async () => {
     try {
       const storedPatients = await AsyncStorage.getItem('patients');
@@ -24,75 +29,101 @@ const Home: React.FC = () => {
   };
 
   useEffect(() => {
-    getPatients(); // Fetch patients when the page loads
+    getPatients();
   }, []);
 
-  // Navigate to patient actions page
+  useEffect(() => {
+    const checkForNotifications = () => {
+      const notifications: string[] = [];
+      let newCount = 0;
+      patients.forEach((patient) => {
+        const ddr = patient.ddr;
+        if (ddr) {
+          const ddrDate = new Date(ddr);
+          const nextAppointmentDate = addMonths(ddrDate, 1);
+          const currentDate = new Date();
+          
+          if (
+            nextAppointmentDate.getDate() === currentDate.getDate() &&
+            nextAppointmentDate.getMonth() === currentDate.getMonth() &&
+            nextAppointmentDate.getFullYear() === currentDate.getFullYear()
+          ) {
+            const message = `Rappel : Rendez-vous pour patient ${patient.nom} ${patient.prenom} prévu aujourd'hui.`;
+            notifications.push(message);
+            setToastMessage(message);
+            setShowToast(true);
+            newCount += 1;
+          }
+        }
+      });
+      setNotificationMessages(notifications);
+      setNewNotificationsCount(newCount);
+    };
+    
+    checkForNotifications();
+
+  }, [patients]);
+
   const navigateToPatientActions = (patient: any) => {
     history.push({
       pathname: `/patient-details`,
-      state: { patient },  // Pass the patient to the actions page via state
+      state: { patient },
     });
   };
 
-  // Navigate to patient edit form
   const navigateToEditPatient = (patient: any) => {
     history.push({
       pathname: `/patient-form`,
-      state: { patient },  // Pass the patient to the form page via state
+      state: { patient },
     });
   };
 
-  // Delete a patient
   const deletePatient = async (patient: any) => {
     try {
       const storedPatients = await AsyncStorage.getItem('patients');
       let patients = storedPatients ? JSON.parse(storedPatients) : [];
-      patients = patients.filter((p: any) => p.numero !== patient.numero); // Remove the patient by phone number
+      patients = patients.filter((p: any) => p.telephone !== patient.telephone);
 
       await AsyncStorage.setItem('patients', JSON.stringify(patients));
-      setPatients(patients); // Update local state
+      setPatients(patients);
     } catch (error) {
       setStorageMessage('Failed to delete patient.');
     }
   };
 
-  // Refresh patients list
   const handleRefresh = async (event: CustomEvent) => {
-    await getPatients(); // Fetch patients
-    event.detail.complete(); // Complete the refresh
+    await getPatients();
+    event.detail.complete();
   };
 
-  // Navigate to another page (e.g., for adding a new patient)
   const navigateToAddPatient = () => {
-    history.push('/patient-form'); // Adjust the route to your "Add Patient" page
+    history.push('/patient-form');
   };
 
   const navigateToPatientAntes = (patient: any) => {
     history.push({
       pathname: '/patient-antes',
-      state: { patientNumero: patient.telephone },  // Pass the patient's phone number
+      state: { patientNumero: patient.telephone },
     });
   };
 
-  // Handle message menu item click
   const handleMenuMessageClick = () => {
-    // Handle your message logic here
     console.log("Message menu item clicked");
   };
 
-  // Handle theme menu item click
   const handleMenuThemeClick = () => {
-    // Handle your theme logic here
     console.log("Theme menu item clicked");
   };
 
-  // Navigate to statistics page
+  const handleMenuNotificationClick = () => {
+    setShowNotifications(true);
+    setNewNotificationsCount(0); // Réinitialiser le compte des nouvelles notifications lorsqu'elles sont consultées
+  };
+
   const navigateToStatistics = () => {
     history.push('/statistics');
   };
 
-  // Navigate to advertisements page
   const navigateToAdvertisements = () => {
     history.push('/advertisements');
   };
@@ -115,6 +146,13 @@ const Home: React.FC = () => {
               <IonIcon icon={colorPalette} slot="start" />
               <IonLabel>Thème</IonLabel>
             </IonItem>
+            <IonItem button onClick={handleMenuNotificationClick}>
+              <IonIcon icon={notifications} slot="start" />
+              <IonLabel>Notifications</IonLabel>
+              {newNotificationsCount > 0 && (
+                <IonBadge color="danger" slot="end">{newNotificationsCount}</IonBadge>
+              )}
+            </IonItem>
           </IonList>
         </IonContent>
       </IonMenu>
@@ -133,7 +171,6 @@ const Home: React.FC = () => {
             <IonRefresherContent pullingText="Tirer pour rafraîchir" refreshingSpinner="circles" />
           </IonRefresher>
 
-          {/* Modify title based on the number of patients */}
           <h2>{patients.length > 2 ? 'Liste des patients' : 'Liste de patient'}</h2>
           <p>{storageMessage}</p>
 
@@ -141,33 +178,25 @@ const Home: React.FC = () => {
             {patients.length > 0 ? (
               patients.map((patient, index) => (
                 <IonItem key={index}>
-                  {/* Display patient phone number, name, and surname */}
                   <IonLabel onClick={() => navigateToPatientActions(patient)}>
                     {`Numéro: ${patient.telephone} Nom: ${patient.nom} Prénom: ${patient.prenom}`}
                   </IonLabel>
-                  {/* Edit icon */}
                   <IonIcon icon={pencil} slot="end" onClick={() => navigateToEditPatient(patient)} />
-                  {/* Delete icon */}
                   <IonIcon icon={trash} slot="end" onClick={() => deletePatient(patient)} />
-                  {/* Add icon */}
-               
                 </IonItem>
               ))
             ) : (
               <p>No patients added yet.</p>
             )}
           </IonList>
-          
         </IonContent>
 
-        {/* Floating button to add a new patient */}
         <div style={{ position: 'fixed', bottom: '70px', left: '50%', transform: 'translateX(-50%)' }}>
           <IonFabButton onClick={navigateToAddPatient}>
             <IonIcon icon={add}></IonIcon>
           </IonFabButton>
         </div>
 
-        {/* Tab bar for navigation */}
         <IonTabBar slot="bottom">
           <IonTabButton tab="home" onClick={handleRefresh}>
             <IonIcon icon={home} />
@@ -183,6 +212,39 @@ const Home: React.FC = () => {
           </IonTabButton>
         </IonTabBar>
       </IonPage>
+
+      <IonToast
+        isOpen={showToast}
+        message={toastMessage}
+        duration={5000}
+        onDidDismiss={() => setShowToast(false)}
+      />
+
+      <IonModal isOpen={showNotifications} onDidDismiss={() => setShowNotifications(false)}>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Notifications</IonTitle>
+            <IonButtons slot="end">
+              <IonButton onClick={() => setShowNotifications(false)}>Fermer</IonButton>
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent>
+          <IonList>
+            {notificationMessages.length > 0 ? (
+              notificationMessages.map((message, index) => (
+                <IonItem key={index}>
+                  <IonLabel>{message}</IonLabel>
+                </IonItem>
+              ))
+            ) : (
+              <IonItem>
+                <IonLabel>Aucune notification.</IonLabel>
+              </IonItem>
+            )}
+          </IonList>
+        </IonContent>
+      </IonModal>
     </>
   );
 };

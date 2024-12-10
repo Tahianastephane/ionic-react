@@ -58,30 +58,30 @@ const PatientDetails: React.FC = () => {
     mortNe: undefined,
     faussesCouches: undefined,
     habitude: undefined,
+    autreAntecedent: '', // Ajout du champ texte pour d'autres antécédents
   });
 
   const [isAntecedentAdded, setIsAntecedentAdded] = useState<boolean>(false); // État pour savoir si l'antécédent est ajouté
   const [patients, setPatients] = useState<any[]>([]);
+  const [showPatientDetails, setShowPatientDetails] = useState<boolean>(false); // État pour contrôler la visibilité des détails du patient
+  const [showAntecedents, setShowAntecedents] = useState<boolean>(false); // État pour contrôler la visibilité des antécédents
 
   // Fonction pour récupérer la liste des patients depuis Capacitor Storage
   const getPatients = async () => {
     try {
       const storedPatients = await Storage.get({ key: 'patients' });
-      if (storedPatients.value) {
-        setPatients(JSON.parse(storedPatients.value));
-      } else {
-        setPatients([]);
-      }
+      const parsedPatients = storedPatients.value ? JSON.parse(storedPatients.value) : [];
+      setPatients(parsedPatients);
     } catch (error) {
-      console.log('Erreur lors de la récupération des patients', error);
+      console.error('Erreur lors de la récupération des patients', error);
     }
   };
 
+  // Vérifier si l'antécédent existe déjà pour ce patient
   useEffect(() => {
     getPatients(); // Charger les patients lorsque la page se charge
   }, []);
 
-  // Vérifier si l'antécédent existe déjà pour ce patient
   useEffect(() => {
     if (patient) {
       const existingPatient = patients.find((p) => p.telephone === patient.telephone);
@@ -96,10 +96,17 @@ const PatientDetails: React.FC = () => {
   const handleCheckboxChange = (field: string, value: boolean) => {
     setAnswers((prevState: any) => ({
       ...prevState,
-      [field]: value ? true : false,
+      [field]: value,
     }));
   };
 
+  // Gérer les changements dans les champs de texte
+  const handleInputChange = (field: string, value: string) => {
+    setAnswers((prevState: any) => ({
+      ...prevState,
+      [field]: value,
+    }));
+  };
 
   // Ajouter les antécédents au patient
   const addAntecedent = async () => {
@@ -158,121 +165,197 @@ const PatientDetails: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        <h2>Détails de {patient.nom} {patient.prenom}</h2>
-        <IonItem>
-          <IonLabel>Nom: {patient.nom}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>Prénom: {patient.prenom}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>Âge: {patient.age}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>Marie: {patient.marie}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>Région: {patient.region}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>District Sanitaire: {patient.district_sanitaire}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>Formation Sanitaire: {patient.formation_sanitaire}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>Niveau d'Instruction: {patient.niveau_instruction}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>Profession de la Femme: {patient.profession_femme}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>Profession du Mari: {patient.profession_mari}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>Adresse: {patient.adresse}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>Commune: {patient.commune}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>Date du Dernier Accouchement: {patient.date_dernier_accouchement}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>Nombre d'Enfants Vivants: {patient.nombre_enfants_vivants}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>Gestité: {patient.gestite}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>Parité: {patient.parite}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>DDR: {patient.ddr}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>DPA: {patient.dpa}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>CPN1: {patient.cpn1}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>Rappel: {patient.rappel}</IonLabel>
-        </IonItem>
+        <button onClick={() => setShowPatientDetails(!showPatientDetails)}>
+          <h2>Détails de {patient.nom} {patient.prenom}</h2>
+        </button>
+        {showPatientDetails && (
+          <>
+            <IonItem>
+              <IonLabel>Nom: {patient.nom}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>Prénom: {patient.prenom}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>Âge: {patient.age}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>Marie: {patient.marie}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>Région: {patient.region}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>District Sanitaire: {patient.district_sanitaire}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>Formation Sanitaire: {patient.formation_sanitaire}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>Niveau d'Instruction: {patient.niveau_instruction}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>Profession de la Femme: {patient.profession_femme}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>Profession du Mari: {patient.profession_mari}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>Adresse: {patient.adresse}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>Commune: {patient.commune}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>Date du Dernier Accouchement: {patient.date_dernier_accouchement}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>Nombre d'Enfants Vivants: {patient.nombre_enfants_vivants}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>Gestité: {patient.gestite}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>Parité: {patient.parite}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>DDR: {patient.ddr}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>DPA: {patient.dpa}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>CPN1: {patient.cpn1}</IonLabel>
+            </IonItem>
+            <IonItem>
+              <IonLabel>Rappel: {patient.rappel}</IonLabel>
+            </IonItem>
+          </>
+        )}
 
-        <IonGrid>
-          <IonRow>
-            <IonCol size="12">
-              <IonLabel>Numéro de téléphone</IonLabel>
-              <IonInput
-                value={patient.telephone}
-                readonly
-              />
-            </IonCol>
-          </IonRow>
-          {[
-            { label: 'Age inférieur à 18 ans', field: 'ageInferieur18Ans' },
-            { label: 'Age supérieur à 38 ans', field: 'ageSuperieur38Ans' },
-            { label: 'Primipare âgée de plus de 35 ans', field: 'primipareAgeePlus35Ans' },
-            { label: 'Parité supérieure à 5', field: 'pariteSuperieure5' },
-            { label: 'Dernier accouchement il y a moins de 2 ans', field: 'dernierAccouchementMoins2Ans' },
-            { label: 'Bassin rétréci asymétrique', field: 'bassinRetreciAsymetrique' },
-            { label: 'TA supérieure à 14/8', field: 'taSup148' },
-            { label: 'Diabète', field: 'diabete' },
-            { label: 'Dyspnée', field: 'dyspnee' },
-            { label: 'Intervention chirurgicale', field: 'intervention' },
-            { label: 'Grossesse gemellaire', field: 'grossesseGemellaire' },
-            { label: 'Antécédents médicaux', field: 'antecedent' },
-            { label: 'Mort-né', field: 'mortNe' },
-            { label: 'Fausses couches', field: 'faussesCouches' },
-            { label: 'Habitude', field: 'habitude' },
-          ].map(({ label, field }) => (
-            <IonRow key={field}>
-            <IonCol size="6">
-              <IonLabel>{label}</IonLabel>
-            </IonCol>
-            <IonCol size="3">
-              <IonCheckbox
-                checked={answers[field] === true}
-                onIonChange={() => handleCheckboxChange(field, true)}
-              />
-              <IonLabel>Oui</IonLabel>
-            </IonCol>
-            <IonCol size="3">
-              <IonCheckbox
-                checked={answers[field] === false}
-                onIonChange={() => handleCheckboxChange(field, false)}
-              />
-              <IonLabel>Non</IonLabel>
-            </IonCol>
-          </IonRow>
-          ))}
-        </IonGrid>
-
-        {/* Bouton pour ajouter les antécédents */}
-        <IonButton expand="full" onClick={handleSubmit}>
-          {isAntecedentAdded ? 'Voir Antécédent' : 'Ajouter Antécédent'}
-        </IonButton>
+        <button onClick={() => setShowAntecedents(!showAntecedents)}>
+          <h2>Antécédents de {patient.nom}</h2>
+        </button>
+        {showAntecedents && (
+          <>
+            <IonGrid>
+              <IonRow>
+                <IonCol>
+                  <IonItem>
+                    <IonLabel>Âge inférieur à 18 ans</IonLabel>
+                    <IonCheckbox
+                      checked={answers.ageInferieur18Ans}
+                      onIonChange={(e) => handleCheckboxChange('ageInferieur18Ans', e.detail.checked)}
+                    />
+                  </IonItem>
+                  <IonItem>
+                    <IonLabel>Âge supérieur à 38 ans</IonLabel>
+                    <IonCheckbox
+                      checked={answers.ageSuperieur38Ans}
+                      onIonChange={(e) => handleCheckboxChange('ageSuperieur38Ans', e.detail.checked)}
+                    />
+                  </IonItem>
+                  <IonItem>
+                    <IonLabel>Primipare âgée de plus de 35 ans</IonLabel>
+                    <IonCheckbox
+                      checked={answers.primipareAgeePlus35Ans}
+                      onIonChange={(e) => handleCheckboxChange('primipareAgeePlus35Ans', e.detail.checked)}
+                    />
+                  </IonItem>
+                  <IonItem>
+                    <IonLabel>Parité supérieure à 5</IonLabel>
+                    <IonCheckbox
+                      checked={answers.pariteSuperieure5}
+                      onIonChange={(e) => handleCheckboxChange('pariteSuperieure5', e.detail.checked)}
+                    />
+                  </IonItem>
+                  <IonItem>
+                    <IonLabel>Dernier accouchement il y a moins de 2 ans</IonLabel>
+                    <IonCheckbox
+                      checked={answers.dernierAccouchementMoins2Ans}
+                      onIonChange={(e) => handleCheckboxChange('dernierAccouchementMoins2Ans', e.detail.checked)}
+                    />
+                  </IonItem>
+                  <IonItem>
+                    <IonLabel>Bassin rétréci ou asymétrique</IonLabel>
+                    <IonCheckbox
+                      checked={answers.bassinRetreciAsymetrique}
+                      onIonChange={(e) => handleCheckboxChange('bassinRetreciAsymetrique', e.detail.checked)}
+                    />
+                  </IonItem>
+                  <IonItem>
+                    <IonLabel>TA supérieure à 148/100</IonLabel>
+                    <IonCheckbox
+                      checked={answers.taSup148}
+                      onIonChange={(e) => handleCheckboxChange('taSup148', e.detail.checked)}
+                    />
+                  </IonItem>
+                  <IonItem>
+                    <IonLabel>Diabète</IonLabel>
+                    <IonCheckbox
+                      checked={answers.diabete}
+                      onIonChange={(e) => handleCheckboxChange('diabete', e.detail.checked)}
+                    />
+                  </IonItem>
+                </IonCol>
+                <IonCol>
+                  <IonItem>
+                    <IonLabel>Dyspnée</IonLabel>
+                    <IonCheckbox
+                      checked={answers.dyspnee}
+                      onIonChange={(e) => handleCheckboxChange('dyspnee', e.detail.checked)}
+                    />
+                  </IonItem>
+                  <IonItem>
+                    <IonLabel>Intervention chirurgicale utérine</IonLabel>
+                    <IonCheckbox
+                      checked={answers.intervention}
+                      onIonChange={(e) => handleCheckboxChange('intervention', e.detail.checked)}
+                    />
+                  </IonItem>
+                  <IonItem>
+                    <IonLabel>Grossesse gémellaire</IonLabel>
+                    <IonCheckbox
+                      checked={answers.grossesseGemellaire}
+                      onIonChange={(e) => handleCheckboxChange('grossesseGemellaire', e.detail.checked)}
+                    />
+                  </IonItem>
+                  <IonItem>
+                    <IonLabel>Antécédent de mort-né</IonLabel>
+                    <IonCheckbox
+                      checked={answers.mortNe}
+                      onIonChange={(e) => handleCheckboxChange('mortNe', e.detail.checked)}
+                    />
+                  </IonItem>
+                  <IonItem>
+                    <IonLabel>Antécédent de fausses couches</IonLabel>
+                    <IonCheckbox
+                      checked={answers.faussesCouches}
+                      onIonChange={(e) => handleCheckboxChange('faussesCouches', e.detail.checked)}
+                    />
+                  </IonItem>
+                  <IonItem>
+                    <IonLabel>Habitude particulière (alcoolisme, tabagisme)</IonLabel>
+                    <IonCheckbox
+                      checked={answers.habitude}
+                      onIonChange={(e) => handleCheckboxChange('habitude', e.detail.checked)}
+                    />
+                  </IonItem>
+                  <IonItem>
+                    <IonLabel>Autre antécédent</IonLabel>
+                    <IonInput
+                      value={answers.autreAntecedent}
+                      onIonChange={(e) => handleInputChange('autreAntecedent', e.detail.value!)}
+                    />
+                  </IonItem>
+                </IonCol>
+              </IonRow>
+            </IonGrid>
+            <IonButton expand="full" onClick={handleSubmit}>
+              {isAntecedentAdded ? 'Mettre à jour les antécédents' : 'Ajouter Antécédent'}
+            </IonButton>
+          </>
+        )}
       </IonContent>
     </IonPage>
   );
